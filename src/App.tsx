@@ -7,12 +7,16 @@ import { syncService } from '@/lib/sync'
 import '@/styles/calendar.css'
 
 export default function App() {
-  const { notesOpen, darkMode } = useAppStore()
+  const { notesOpen, darkMode, googleAccounts, syncAllGoogleAccounts } = useAppStore()
 
   useEffect(() => {
     syncService.init()
     return () => syncService.destroy()
   }, [])
+
+  useEffect(() => {
+    if (googleAccounts.length > 0) syncAllGoogleAccounts()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className={darkMode ? 'dark' : ''}>

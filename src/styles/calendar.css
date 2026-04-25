@@ -13,3 +13,48 @@
 .fc .fc-timegrid-slot { height: 2.5rem; }
 .fc .fc-timegrid-slot-label { font-size: 0.75rem; color: hsl(var(--muted-foreground)); }
 .fc .fc-toolbar { padding: 16px 20px; gap: 8px; }
+
+/* ── Dark mode overrides ───────────────────────────────────────────────── */
+/* Base text colour — FullCalendar doesn't inherit from body in all cases */
+.dark .fc { color: hsl(var(--foreground)); }
+.dark .fc-col-header-cell-cushion,
+.dark .fc-daygrid-day-number,
+.dark .fc-timegrid-slot-label-cushion,
+.dark .fc-daygrid-more-link,
+.dark .fc-toolbar-title { color: hsl(var(--foreground)) !important; }
+
+/* Event text — force white on the coloured pill regardless of theme */
+.dark .fc .fc-event-title,
+.dark .fc .fc-event-time { color: #fff !important; }
+.dark .fc-view, .dark .fc-scrollgrid, .dark .fc-scrollgrid-liquid,
+.dark td.fc-day, .dark td.fc-timegrid-col,
+.dark .fc-daygrid-day, .dark .fc-daygrid-day-frame,
+.dark .fc-timegrid-col-frame, .dark .fc-timegrid-body {
+  background-color: hsl(var(--card)) !important;
+}
+
+.dark .fc-col-header-cell { background-color: hsl(var(--card)) !important; }
+
+.dark .fc-day-other .fc-daygrid-day-number { color: hsl(var(--muted-foreground)); }
+.dark .fc-day-other { background-color: hsl(222 20% 9%) !important; }
+
+.dark .fc-non-business { background-color: hsl(222 20% 9%) !important; }
+
+.dark .fc-timegrid-now-indicator-line { border-color: hsl(var(--primary)) !important; }
+.dark .fc-timegrid-now-indicator-arrow { border-bottom-color: hsl(var(--primary)) !important; border-top-color: hsl(var(--primary)) !important; }
+
+.dark .fc-more-popover {
+  background-color: hsl(var(--card)) !important;
+  border-color: hsl(var(--border)) !important;
+}
+.dark .fc-more-popover .fc-popover-header {
+  background-color: hsl(var(--secondary)) !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+.dark .fc-list-table, .dark .fc-list-day-cushion {
+  background-color: hsl(var(--card)) !important;
+  color: hsl(var(--foreground)) !important;
+}
+.dark .fc-list-event:hover td { background-color: hsl(var(--secondary)) !important; }
+.dark .fc-list-event-title a { color: hsl(var(--foreground)) !important; }
