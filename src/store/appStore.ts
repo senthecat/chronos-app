@@ -1,9 +1,10 @@
 import { create } from 'zustand'
-import { CalendarEvent, EventCategory, GoogleAccount, Note } from '@/lib/types'
+import { CalendarEvent, CanvasSettings, EventCategory, GoogleAccount, Note, Reminder, ReminderPriority } from '@/lib/types'
 import { storage } from '@/lib/storage'
 import { generateId, CATEGORY_COLORS } from '@/lib/utils'
 import { getUserInfo } from '@/lib/googleCalendar'
 import { performGoogleSync } from '@/lib/googleSync'
+import { performCanvasSync } from '@/lib/canvasSync'
 
 const ALL_CATEGORIES: EventCategory[] = ['work', 'personal', 'health', 'focus', 'social']
 
@@ -26,10 +27,16 @@ interface AppStore {
   // UI state
   darkMode: boolean
   notesOpen: boolean
+  remindersOpen: boolean
   selectedDate: Date | null
   selectedEventId: string | null
   view: 'dayGridMonth' | 'timeGridWeek' | 'timeGridDay'
   selectedCategories: Set<EventCategory>
+
+  // Canvas state
+  canvasSettings: CanvasSettings | null
+  canvasSyncing: boolean
+  canvasSyncError: string | null
 
   // Google state
   googleAccounts: GoogleAccount[]
@@ -40,16 +47,23 @@ interface AppStore {
   // Data
   events: CalendarEvent[]
   notes: Note[]
+  reminders: Reminder[]
 
   // UI actions
   toggleDark: () => void
   toggleNotes: () => void
+  toggleReminders: () => void
   setSelectedDate: (date: Date | null) => void
   setSelectedEvent: (id: string | null) => void
   setView: (view: AppStore['view']) => void
   toggleCategory: (category: EventCategory) => void
   selectAllCategories: () => void
   deselectAllCategories: () => void
+
+  // Canvas actions
+  connectCanvas: (url: string, token: string) => Promise<void>
+  disconnectCanvas: () => void
+  syncCanvas: () => Promise<void>
 
   // Google actions
   connectGoogleAccount: (clientId: string, clientSecret: string) => Promise<void>
@@ -69,24 +83,36 @@ interface AppStore {
   addNote: (note: Omit<Note, 'id' | 'createdAt' | 'updatedAt'>) => void
   updateNote: (id: string, patch: Partial<Note>) => void
   deleteNote: (id: string) => void
+
+  // Reminder actions
+  addReminder: (reminder: Omit<Reminder, 'id' | 'createdAt' | 'updatedAt'>) => void
+  updateReminder: (id: string, patch: Partial<Reminder>) => void
+  deleteReminder: (id: string) => void
+  toggleReminderComplete: (id: string) => void
 }
 
 export const useAppStore = create<AppStore>((set, get) => ({
   darkMode: false,
   notesOpen: false,
+  remindersOpen: false,
   selectedDate: null,
   selectedEventId: null,
   view: 'dayGridMonth',
   selectedCategories: new Set(ALL_CATEGORIES),
+  canvasSettings: storage.getCanvasSettings(),
+  canvasSyncing: false,
+  canvasSyncError: null,
   googleAccounts: storage.getGoogleAccounts(),
   hiddenGoogleAccounts: new Set<string>(),
   googleSyncing: false,
   googleSyncError: null,
   events: storage.getEvents(),
   notes: storage.getNotes(),
+  reminders: storage.getReminders(),
 
   toggleDark: () => set((s) => ({ darkMode: !s.darkMode })),
   toggleNotes: () => set((s) => ({ notesOpen: !s.notesOpen })),
+  toggleReminders: () => set((s) => ({ remindersOpen: !s.remindersOpen })),
   setSelectedDate: (date) => set({ selectedDate: date }),
   setSelectedEvent: (id) => set({ selectedEventId: id }),
   setView: (view) => set({ view }),
@@ -247,5 +273,84 @@ export const useAppStore = create<AppStore>((set, get) => ({
       storage.setNotes(notes)
       return { notes }
     })
+  },
+
+  addReminder: (reminder) => {
+    const now = new Date().toISOString()
+    const newReminder: Reminder = { ...reminder, id: generateId(), createdAt: now, updatedAt: now }
+    set((s) => {
+      const reminders = [...s.reminders, newReminder]
+      storage.setReminders(reminders)
+      return { reminders }
+    })
+  },
+
+  updateReminder: (id, patch) => {
+    set((s) => {
+      const reminders = s.reminders.map((r) =>
+        r.id === id ? { ...r, ...patch, updatedAt: new Date().toISOString() } : r
+      )
+      storage.setReminders(reminders)
+      return { reminders }
+    })
+  },
+
+  deleteReminder: (id) => {
+    set((s) => {
+      const reminders = s.reminders.filter((r) => r.id !== id)
+      storage.setReminders(reminders)
+      return { reminders }
+    })
+  },
+
+  toggleReminderComplete: (id) => {
+    set((s) => {
+      const reminders = s.reminders.map((r) =>
+        r.id === id ? { ...r, completed: !r.completed, updatedAt: new Date().toISOString() } : r
+      )
+      storage.setReminders(reminders)
+      return { reminders }
+    })
+  },
+
+  connectCanvas: async (url, token) => {
+    if (!window.electronAPI) {
+      set({ canvasSyncError: 'Run the app with: npm run electron:dev' })
+      return
+    }
+    set({ canvasSyncing: true, canvasSyncError: null })
+    try {
+      const settings: CanvasSettings = { url: url.trim(), token: token.trim() }
+      storage.setCanvasSettings(settings)
+      set({ canvasSettings: settings })
+      const reminders = await performCanvasSync(settings)
+      set({ reminders })
+    } catch (e: unknown) {
+      storage.removeCanvasSettings()
+      set({ canvasSettings: null, canvasSyncError: e instanceof Error ? e.message : 'Failed to connect to Canvas' })
+    } finally {
+      set({ canvasSyncing: false })
+    }
+  },
+
+  disconnectCanvas: () => {
+    storage.removeCanvasSettings()
+    const reminders = storage.getReminders().filter((r) => r.source !== 'canvas')
+    storage.setReminders(reminders)
+    set({ canvasSettings: null, canvasSyncError: null, reminders })
+  },
+
+  syncCanvas: async () => {
+    const { canvasSettings } = get()
+    if (!canvasSettings || !window.electronAPI) return
+    set({ canvasSyncing: true, canvasSyncError: null })
+    try {
+      const reminders = await performCanvasSync(canvasSettings)
+      set({ reminders })
+    } catch (e: unknown) {
+      set({ canvasSyncError: e instanceof Error ? e.message : 'Canvas sync failed' })
+    } finally {
+      set({ canvasSyncing: false })
+    }
   },
 }))

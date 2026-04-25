@@ -1,4 +1,5 @@
-import { Calendar, StickyNote, Moon, Sun, Settings, RefreshCw, CalendarPlus, X } from 'lucide-react'
+import { useState } from 'react'
+import { Calendar, StickyNote, Moon, Sun, Settings, RefreshCw, CalendarPlus, X, ListTodo, GraduationCap } from 'lucide-react'
 import { useAppStore, availableCredentialSets } from '@/store/appStore'
 import { syncService } from '@/lib/sync'
 import { storage } from '@/lib/storage'
@@ -21,15 +22,29 @@ const CATEGORIES: { id: EventCategory; label: string; color: string }[] = [
 
 export function Sidebar() {
   const {
-    darkMode, notesOpen, view,
+    darkMode, notesOpen, remindersOpen, view,
     selectedCategories,
+    canvasSettings, canvasSyncing, canvasSyncError,
     googleAccounts, hiddenGoogleAccounts, googleSyncing, googleSyncError,
-    toggleDark, toggleNotes, setView,
+    toggleDark, toggleNotes, toggleReminders, setView,
     toggleCategory, selectAllCategories, deselectAllCategories,
+    connectCanvas, disconnectCanvas, syncCanvas,
     connectGoogleAccount, disconnectGoogleAccount, syncGoogleAccount,
     toggleGoogleAccountVisibility, showAllGoogleAccounts, hideAllGoogleAccounts,
   } = useAppStore()
   const lastSync = storage.getLastSync()
+
+  const [showCanvasForm, setShowCanvasForm] = useState(false)
+  const [canvasUrlInput, setCanvasUrlInput] = useState('')
+  const [canvasTokenInput, setCanvasTokenInput] = useState('')
+
+  const handleCanvasConnect = () => {
+    if (!canvasUrlInput.trim() || !canvasTokenInput.trim()) return
+    connectCanvas(canvasUrlInput.trim(), canvasTokenInput.trim())
+    setShowCanvasForm(false)
+    setCanvasUrlInput('')
+    setCanvasTokenInput('')
+  }
 
   const credSets = availableCredentialSets()
   const connectedClientIds = new Set(googleAccounts.map((a) => a.clientId))
@@ -108,6 +123,83 @@ export function Sidebar() {
 
       {/* Bottom actions */}
       <div className="px-3 pb-4 space-y-0.5 border-t border-border pt-3">
+
+        {/* Canvas */}
+        <div className="mb-1">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground px-2 mb-1">Canvas</p>
+          {canvasSettings ? (
+            <div className="flex items-center gap-1 px-2 py-1.5 rounded-md group hover:bg-secondary">
+              <button
+                onClick={syncCanvas}
+                disabled={canvasSyncing}
+                className="flex-1 flex items-center gap-2 text-sm text-left min-w-0 text-foreground"
+                title="Click to sync"
+              >
+                <span className="w-2 h-2 rounded-full bg-orange-500 shrink-0" />
+                <span className="truncate">{canvasSettings.url.replace(/^https?:\/\//, '')}</span>
+              </button>
+              <button
+                onClick={syncCanvas}
+                disabled={canvasSyncing}
+                className="shrink-0 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground transition-all disabled:opacity-30"
+                title="Sync"
+              >
+                <RefreshCw size={12} className={canvasSyncing ? 'animate-spin' : ''} />
+              </button>
+              <button
+                onClick={disconnectCanvas}
+                className="shrink-0 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all"
+                title="Disconnect"
+              >
+                <X size={12} />
+              </button>
+            </div>
+          ) : showCanvasForm ? (
+            <div className="px-2 space-y-1.5 pb-1">
+              <input
+                autoFocus
+                placeholder="canvas.school.edu"
+                value={canvasUrlInput}
+                onChange={(e) => setCanvasUrlInput(e.target.value)}
+                className="w-full text-xs text-foreground bg-secondary rounded-md px-2 py-1.5 outline-none focus:ring-1 ring-primary placeholder:text-muted-foreground"
+              />
+              <input
+                type="password"
+                placeholder="Access token"
+                value={canvasTokenInput}
+                onChange={(e) => setCanvasTokenInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleCanvasConnect()}
+                className="w-full text-xs text-foreground bg-secondary rounded-md px-2 py-1.5 outline-none focus:ring-1 ring-primary placeholder:text-muted-foreground"
+              />
+              <div className="flex gap-1.5">
+                <button
+                  onClick={() => { setShowCanvasForm(false); setCanvasUrlInput(''); setCanvasTokenInput('') }}
+                  className="flex-1 text-xs py-1 rounded-md bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCanvasConnect}
+                  disabled={canvasSyncing || !canvasUrlInput.trim() || !canvasTokenInput.trim()}
+                  className="flex-1 text-xs py-1 rounded-md bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-40 transition-opacity"
+                >
+                  {canvasSyncing ? 'Connecting…' : 'Connect'}
+                </button>
+              </div>
+              {canvasSyncError && (
+                <p className="text-[10px] text-destructive truncate" title={canvasSyncError}>{canvasSyncError}</p>
+              )}
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowCanvasForm(true)}
+              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+            >
+              <GraduationCap size={14} />
+              Connect Canvas
+            </button>
+          )}
+        </div>
 
         {/* Google Calendar accounts */}
         {(googleAccounts.length > 0 || nextCredSet) && (
@@ -189,6 +281,18 @@ export function Sidebar() {
           </button>
         )}
 
+        <button
+          onClick={toggleReminders}
+          className={cn(
+            'w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors',
+            remindersOpen
+              ? 'bg-accent text-accent-foreground font-medium'
+              : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
+          )}
+        >
+          <ListTodo size={14} />
+          Reminders
+        </button>
         <button
           onClick={toggleNotes}
           className={cn(

@@ -44,3 +44,33 @@ export interface AppSettings {
   defaultView: 'dayGridMonth' | 'timeGridWeek' | 'timeGridDay'
   syncProvider: 'supabase' | 'github' | 'local'
 }
+
+export interface CanvasSettings {
+  url: string
+  token: string
+}
+
+export interface CanvasCourseSettings {
+  id: number
+  name: string
+  color: string
+  tracked: boolean
+}
+
+export type ReminderPriority = 'low' | 'medium' | 'high'
+export type ReminderSource = 'personal' | 'canvas'
+
+export interface Reminder {
+  id: string
+  title: string
+  notes?: string
+  dueDate?: string
+  completed: boolean
+  priority: ReminderPriority
+  source: ReminderSource
+  color?: string
+  canvasAssignmentId?: string
+  canvasCourseId?: number
+  createdAt: string
+  updatedAt: string
+}

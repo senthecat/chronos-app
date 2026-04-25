@@ -95,24 +95,22 @@ export async function performGoogleSync(
     }
   }
 
-  // 4. Push new local-only events to Google — only via the primary account
-  if (isPrimary) {
-    const updated: CalendarEvent[] = []
-    for (const e of local) {
-      if (!e.googleEventId) {
-        try {
-          const gId = await createGoogleEvent(accessToken, e)
-          updated.push({ ...e, googleEventId: gId, googleAccountId: account.id })
-        } catch (err) {
-          console.warn('[GoogleSync] create failed:', err)
-          updated.push(e)
-        }
-      } else {
+  // 4. Push local events explicitly assigned to this account
+  const updated: CalendarEvent[] = []
+  for (const e of local) {
+    if (!e.googleEventId && e.googleAccountId === account.id) {
+      try {
+        const gId = await createGoogleEvent(accessToken, e)
+        updated.push({ ...e, googleEventId: gId })
+      } catch (err) {
+        console.warn('[GoogleSync] create failed:', err)
         updated.push(e)
       }
+    } else {
+      updated.push(e)
     }
-    local = updated
   }
+  local = updated
 
   storage.setEvents(local)
   storage.setLastSync(new Date().toISOString())

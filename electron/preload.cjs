@@ -7,4 +7,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('google:start-auth', clientId, clientSecret),
   refreshGoogleToken: (clientId, clientSecret, refreshToken) =>
     ipcRenderer.invoke('google:refresh-token', clientId, clientSecret, refreshToken),
+  canvasFetchAll: (url, token, path) =>
+    ipcRenderer.invoke('canvas:fetch-all', url, token, path),
 })

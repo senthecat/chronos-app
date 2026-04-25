@@ -10,6 +10,11 @@ interface ElectronAPI {
     clientSecret: string,
     refreshToken: string
   ) => Promise<Pick<GoogleTokens, 'accessToken' | 'expiresAt'>>
+  canvasFetchAll: (
+    url: string,
+    token: string,
+    path: string
+  ) => Promise<unknown[]>
 }
 
 declare global {

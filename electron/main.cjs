@@ -88,6 +88,28 @@ ipcMain.handle('google:refresh-token', async (_, clientId, clientSecret, refresh
   }
 })
 
+ipcMain.handle('canvas:fetch-all', async (_, rawUrl, token, path) => {
+  const base = rawUrl.startsWith('http') ? rawUrl.replace(/\/$/, '') : `https://${rawUrl}`
+  const results = []
+  let url = `${base}/api/v1/${path}`
+  while (url) {
+    const res = await fetch(url, {
+      headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' },
+    })
+    if (!res.ok) {
+      const text = await res.text()
+      throw new Error(`Canvas ${res.status}: ${text.slice(0, 200)}`)
+    }
+    const data = await res.json()
+    if (!Array.isArray(data)) return data
+    results.push(...data)
+    const link = res.headers.get('link')
+    const next = link?.match(/<([^>]+)>;\s*rel="next"/)
+    url = next?.[1] ?? null
+  }
+  return results
+})
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1280,

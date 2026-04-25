@@ -42,9 +42,11 @@
     --muted-foreground: 220 13% 55%;
     --accent: 246 40% 18%;
     --accent-foreground: 246 83% 75%;
+    color-scheme: dark;
   }
   * { @apply border-border; }
   body { @apply bg-background text-foreground font-sans antialiased; }
+  input, textarea, select { color: inherit; }
 }
 
 .app-shell {

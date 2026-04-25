@@ -8,7 +8,8 @@
       "Bash(npx electron *)",
       "Bash(where npm *)",
       "Bash(where node *)",
-      "Bash(npm --version)"
+      "Bash(npm --version)",
+      "Bash(npx tsc *)"
     ]
   }
 }
