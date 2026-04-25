@@ -1,0 +1,61 @@
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 98%;
+    --foreground: 220 13% 9%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 13% 9%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --primary: 246 83% 62%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 13% 96%;
+    --secondary-foreground: 220 13% 30%;
+    --muted: 220 13% 96%;
+    --muted-foreground: 220 13% 46%;
+    --accent: 246 83% 97%;
+    --accent-foreground: 246 83% 40%;
+    --ring: 246 83% 62%;
+    --radius: 0.625rem;
+    --event-work: #6366f1;
+    --event-personal: #10b981;
+    --event-health: #f59e0b;
+    --event-focus: #8b5cf6;
+    --event-social: #ec4899;
+  }
+  .dark {
+    --background: 222 20% 8%;
+    --foreground: 220 13% 95%;
+    --card: 222 20% 11%;
+    --card-foreground: 220 13% 95%;
+    --border: 222 20% 18%;
+    --input: 222 20% 18%;
+    --primary: 246 83% 65%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 222 20% 15%;
+    --secondary-foreground: 220 13% 70%;
+    --muted: 222 20% 15%;
+    --muted-foreground: 220 13% 55%;
+    --accent: 246 40% 18%;
+    --accent-foreground: 246 83% 75%;
+  }
+  * { @apply border-border; }
+  body { @apply bg-background text-foreground font-sans antialiased; }
+}
+
+.app-shell {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  background: hsl(var(--background));
+}
+.main-content {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}

@@ -1,0 +1,15 @@
+.fc { font-family: 'Geist', sans-serif; }
+.fc .fc-toolbar-title { font-size: 1.125rem; font-weight: 500; color: hsl(var(--foreground)); }
+.fc .fc-button { background: hsl(var(--secondary)) !important; border: 1px solid hsl(var(--border)) !important; color: hsl(var(--foreground)) !important; border-radius: var(--radius) !important; font-size: 0.8125rem !important; font-weight: 500 !important; box-shadow: none !important; transition: all 0.15s; }
+.fc .fc-button:hover { background: hsl(var(--muted)) !important; }
+.fc .fc-button-primary:not(:disabled).fc-button-active { background: hsl(var(--primary)) !important; color: hsl(var(--primary-foreground)) !important; border-color: hsl(var(--primary)) !important; }
+.fc .fc-col-header-cell { font-weight: 500; font-size: 0.8125rem; color: hsl(var(--muted-foreground)); padding: 10px 0; border: none; }
+.fc .fc-daygrid-day-number { font-size: 0.875rem; color: hsl(var(--foreground)); padding: 6px 8px; }
+.fc .fc-day-today .fc-daygrid-day-number { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; margin: 4px; }
+.fc .fc-day-today { background: hsl(var(--accent)) !important; }
+.fc-theme-standard td, .fc-theme-standard th, .fc-theme-standard .fc-scrollgrid { border-color: hsl(var(--border)) !important; }
+.fc .fc-event { border: none !important; border-radius: 5px !important; font-size: 0.8rem !important; font-weight: 500 !important; padding: 1px 5px !important; cursor: pointer; transition: opacity 0.15s; }
+.fc .fc-event:hover { opacity: 0.85; }
+.fc .fc-timegrid-slot { height: 2.5rem; }
+.fc .fc-timegrid-slot-label { font-size: 0.75rem; color: hsl(var(--muted-foreground)); }
+.fc .fc-toolbar { padding: 16px 20px; gap: 8px; }
