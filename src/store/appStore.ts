@@ -1,7 +1,9 @@
 import { create } from 'zustand'
-import { CalendarEvent, Note } from '@/lib/types'
+import { CalendarEvent, EventCategory, Note } from '@/lib/types'
 import { storage } from '@/lib/storage'
 import { generateId, CATEGORY_COLORS } from '@/lib/utils'
+
+const ALL_CATEGORIES: EventCategory[] = ['work', 'personal', 'health', 'focus', 'social']
 
 interface AppStore {
   // UI state
@@ -10,6 +12,7 @@ interface AppStore {
   selectedDate: Date | null
   selectedEventId: string | null
   view: 'dayGridMonth' | 'timeGridWeek' | 'timeGridDay'
+  selectedCategories: Set<EventCategory>
 
   // Data
   events: CalendarEvent[]
@@ -21,6 +24,9 @@ interface AppStore {
   setSelectedDate: (date: Date | null) => void
   setSelectedEvent: (id: string | null) => void
   setView: (view: AppStore['view']) => void
+  toggleCategory: (category: EventCategory) => void
+  selectAllCategories: () => void
+  deselectAllCategories: () => void
 
   // Event actions
   addEvent: (event: Omit<CalendarEvent, 'id' | 'updatedAt' | 'color'>) => void
@@ -39,6 +45,7 @@ export const useAppStore = create<AppStore>((set) => ({
   selectedDate: null,
   selectedEventId: null,
   view: 'dayGridMonth',
+  selectedCategories: new Set(ALL_CATEGORIES),
   events: storage.getEvents(),
   notes: storage.getNotes(),
 
@@ -47,6 +54,14 @@ export const useAppStore = create<AppStore>((set) => ({
   setSelectedDate: (date) => set({ selectedDate: date }),
   setSelectedEvent: (id) => set({ selectedEventId: id }),
   setView: (view) => set({ view }),
+  toggleCategory: (category) => set((s) => {
+    const next = new Set(s.selectedCategories)
+    if (next.has(category)) next.delete(category)
+    else next.add(category)
+    return { selectedCategories: next }
+  }),
+  selectAllCategories: () => set({ selectedCategories: new Set(ALL_CATEGORIES) }),
+  deselectAllCategories: () => set({ selectedCategories: new Set() }),
 
   addEvent: (event) => {
     const newEvent: CalendarEvent = {

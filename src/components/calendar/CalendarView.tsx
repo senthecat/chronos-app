@@ -9,14 +9,14 @@ import { EventModal } from './EventModal'
 import { CalendarEvent } from '@/lib/types'
 
 export function CalendarView() {
-  const { events, view, addEvent, updateEvent, deleteEvent } = useAppStore()
+  const { events, view, selectedCategories, addEvent, updateEvent, deleteEvent } = useAppStore()
   const calendarRef = useRef<FullCalendar>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null)
   const [selectedRange, setSelectedRange] = useState<{ start: string; end: string } | null>(null)
 
-  // Map store events → FullCalendar format
-  const fcEvents = events.map((e) => ({
+  // Map store events → FullCalendar format, filtered by selected categories
+  const fcEvents = events.filter((e) => selectedCategories.has(e.category)).map((e) => ({
     id: e.id,
     title: e.title,
     start: e.start,

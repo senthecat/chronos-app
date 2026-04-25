@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(npm show *)",
+      "Bash(npm run *)",
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('package.json','utf8'\\)\\); console.log\\('valid JSON'\\)\")",
+      "Bash(npx electron *)",
+      "Bash(where npm *)",
+      "Bash(where node *)",
+      "Bash(npm --version)"
+    ]
+  }
+}

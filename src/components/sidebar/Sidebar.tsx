@@ -3,6 +3,7 @@ import { useAppStore } from '@/store/appStore'
 import { syncService } from '@/lib/sync'
 import { storage } from '@/lib/storage'
 import { cn } from '@/lib/utils'
+import { EventCategory } from '@/lib/types'
 
 const NAV_VIEWS = [
   { id: 'dayGridMonth', label: 'Month' },
@@ -10,7 +11,7 @@ const NAV_VIEWS = [
   { id: 'timeGridDay', label: 'Day' },
 ] as const
 
-const CATEGORIES = [
+const CATEGORIES: { id: EventCategory; label: string; color: string }[] = [
   { id: 'work', label: 'Work', color: '#6366f1' },
   { id: 'personal', label: 'Personal', color: '#10b981' },
   { id: 'health', label: 'Health', color: '#f59e0b' },
@@ -19,7 +20,7 @@ const CATEGORIES = [
 ]
 
 export function Sidebar() {
-  const { darkMode, notesOpen, view, toggleDark, toggleNotes, setView } = useAppStore()
+  const { darkMode, notesOpen, view, selectedCategories, toggleDark, toggleNotes, setView, toggleCategory, selectAllCategories, deselectAllCategories } = useAppStore()
   const lastSync = storage.getLastSync()
 
   return (
@@ -60,14 +61,46 @@ export function Sidebar() {
 
       {/* Categories legend */}
       <div className="px-3 pt-5">
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground px-2 mb-1.5">Categories</p>
+        <div className="flex items-center justify-between px-2 mb-1.5">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Categories</p>
+          <div className="flex gap-1">
+            <button
+              onClick={selectAllCategories}
+              className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+            >
+              All
+            </button>
+            <span className="text-[10px] text-muted-foreground">/</span>
+            <button
+              onClick={deselectAllCategories}
+              className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+            >
+              None
+            </button>
+          </div>
+        </div>
         <div className="space-y-0.5">
-          {CATEGORIES.map((cat) => (
-            <div key={cat.id} className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-muted-foreground">
-              <span className="w-2 h-2 rounded-full shrink-0" style={{ background: cat.color }} />
-              {cat.label}
-            </div>
-          ))}
+          {CATEGORIES.map((cat) => {
+            const active = selectedCategories.has(cat.id)
+            return (
+              <button
+                key={cat.id}
+                onClick={() => toggleCategory(cat.id)}
+                className={cn(
+                  'w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors',
+                  active
+                    ? 'text-foreground hover:bg-secondary'
+                    : 'text-muted-foreground/40 hover:bg-secondary hover:text-muted-foreground'
+                )}
+              >
+                <span
+                  className="w-2 h-2 rounded-full shrink-0 transition-opacity"
+                  style={{ background: cat.color, opacity: active ? 1 : 0.3 }}
+                />
+                {cat.label}
+              </button>
+            )
+          })}
         </div>
       </div>
 
