@@ -1,4 +1,4 @@
-import { CalendarEvent, CanvasSettings, GoogleAccount, Note, Reminder } from './types'
+import { CalendarEvent, CanvasCourseSettings, CanvasSettings, GoogleAccount, Note, Reminder } from './types'
 
 const KEYS = {
   events: 'chronos:events',
@@ -7,6 +7,7 @@ const KEYS = {
   lastSync: 'chronos:lastSync',
   googleAccounts: 'chronos:googleAccounts',
   canvasSettings: 'chronos:canvasSettings',
+  canvasCourseSettings: 'chronos:canvasCourseSettings',
 }
 
 function pendingDeletesKey(accountId: string) {
@@ -45,6 +46,15 @@ export const storage = {
     localStorage.setItem(KEYS.canvasSettings, JSON.stringify(s)),
   removeCanvasSettings: () =>
     localStorage.removeItem(KEYS.canvasSettings),
+
+  getCanvasCourseSettings: (): CanvasCourseSettings[] => {
+    try { return JSON.parse(localStorage.getItem(KEYS.canvasCourseSettings) || '[]') }
+    catch { return [] }
+  },
+  setCanvasCourseSettings: (s: CanvasCourseSettings[]) =>
+    localStorage.setItem(KEYS.canvasCourseSettings, JSON.stringify(s)),
+  removeCanvasCourseSettings: () =>
+    localStorage.removeItem(KEYS.canvasCourseSettings),
 
   getLastSync: (): string | null => localStorage.getItem(KEYS.lastSync),
   setLastSync: (ts: string) => localStorage.setItem(KEYS.lastSync, ts),

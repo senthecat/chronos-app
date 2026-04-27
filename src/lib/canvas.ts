@@ -1,3 +1,9 @@
+export const COURSE_COLORS = [
+  '#6366f1', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899',
+  '#06b6d4', '#f97316', '#84cc16', '#14b8a6', '#a855f7',
+  '#ef4444', '#3b82f6',
+]
+
 export interface CanvasCourse {
   id: number
   name: string

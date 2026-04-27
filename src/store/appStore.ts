@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { CalendarEvent, CanvasSettings, EventCategory, GoogleAccount, Note, Reminder, ReminderPriority } from '@/lib/types'
+import { CalendarEvent, CanvasCourseSettings, CanvasSettings, EventCategory, GoogleAccount, Note, Reminder } from '@/lib/types'
 import { storage } from '@/lib/storage'
 import { generateId, CATEGORY_COLORS } from '@/lib/utils'
 import { getUserInfo } from '@/lib/googleCalendar'
@@ -30,11 +30,12 @@ interface AppStore {
   remindersOpen: boolean
   selectedDate: Date | null
   selectedEventId: string | null
-  view: 'dayGridMonth' | 'timeGridWeek' | 'timeGridDay'
+  view: 'dayGridMonth' | 'timeGridWeek' | 'timeGridDay' | 'school'
   selectedCategories: Set<EventCategory>
 
   // Canvas state
   canvasSettings: CanvasSettings | null
+  canvasCourseSettings: CanvasCourseSettings[]
   canvasSyncing: boolean
   canvasSyncError: string | null
 
@@ -64,6 +65,7 @@ interface AppStore {
   connectCanvas: (url: string, token: string) => Promise<void>
   disconnectCanvas: () => void
   syncCanvas: () => Promise<void>
+  updateCourseSetting: (courseId: number, patch: Partial<Pick<CanvasCourseSettings, 'tracked' | 'color'>>) => void
 
   // Google actions
   connectGoogleAccount: (clientId: string, clientSecret: string) => Promise<void>
@@ -100,6 +102,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   view: 'dayGridMonth',
   selectedCategories: new Set(ALL_CATEGORIES),
   canvasSettings: storage.getCanvasSettings(),
+  canvasCourseSettings: storage.getCanvasCourseSettings(),
   canvasSyncing: false,
   canvasSyncError: null,
   googleAccounts: storage.getGoogleAccounts(),
@@ -321,13 +324,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
     set({ canvasSyncing: true, canvasSyncError: null })
     try {
       const settings: CanvasSettings = { url: url.trim(), token: token.trim() }
+      const { reminders, courseSettings } = await performCanvasSync(settings, [])
       storage.setCanvasSettings(settings)
-      set({ canvasSettings: settings })
-      const reminders = await performCanvasSync(settings)
-      set({ reminders })
+      storage.setCanvasCourseSettings(courseSettings)
+      set({ canvasSettings: settings, canvasCourseSettings: courseSettings, reminders })
     } catch (e: unknown) {
-      storage.removeCanvasSettings()
-      set({ canvasSettings: null, canvasSyncError: e instanceof Error ? e.message : 'Failed to connect to Canvas' })
+      set({ canvasSyncError: e instanceof Error ? e.message : 'Failed to connect to Canvas' })
     } finally {
       set({ canvasSyncing: false })
     }
@@ -335,22 +337,44 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   disconnectCanvas: () => {
     storage.removeCanvasSettings()
+    storage.removeCanvasCourseSettings()
     const reminders = storage.getReminders().filter((r) => r.source !== 'canvas')
     storage.setReminders(reminders)
-    set({ canvasSettings: null, canvasSyncError: null, reminders })
+    set({ canvasSettings: null, canvasCourseSettings: [], canvasSyncError: null, reminders })
   },
 
   syncCanvas: async () => {
-    const { canvasSettings } = get()
+    const { canvasSettings, canvasCourseSettings } = get()
     if (!canvasSettings || !window.electronAPI) return
     set({ canvasSyncing: true, canvasSyncError: null })
     try {
-      const reminders = await performCanvasSync(canvasSettings)
-      set({ reminders })
+      const { reminders, courseSettings } = await performCanvasSync(canvasSettings, canvasCourseSettings)
+      storage.setCanvasCourseSettings(courseSettings)
+      set({ reminders, canvasCourseSettings: courseSettings })
     } catch (e: unknown) {
       set({ canvasSyncError: e instanceof Error ? e.message : 'Canvas sync failed' })
     } finally {
       set({ canvasSyncing: false })
     }
+  },
+
+  updateCourseSetting: (courseId, patch) => {
+    set((s) => {
+      const canvasCourseSettings = s.canvasCourseSettings.map((c) =>
+        c.id === courseId ? { ...c, ...patch } : c
+      )
+      storage.setCanvasCourseSettings(canvasCourseSettings)
+
+      // On color change, update reminder colors immediately (no re-sync needed)
+      let { reminders } = s
+      if (patch.color !== undefined) {
+        reminders = reminders.map((r) =>
+          r.source === 'canvas' && r.canvasCourseId === courseId ? { ...r, color: patch.color } : r
+        )
+        storage.setReminders(reminders)
+      }
+
+      return { canvasCourseSettings, reminders }
+    })
   },
 }))

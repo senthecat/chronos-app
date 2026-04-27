@@ -1,30 +1,56 @@
-import { CanvasSettings, Reminder } from './types'
+import { CanvasCourseSettings, CanvasSettings, Reminder } from './types'
 import { storage } from './storage'
 import { generateId } from './utils'
-import { fetchCanvasCourses, fetchCourseAssignments } from './canvas'
+import { fetchCanvasCourses, fetchCourseAssignments, COURSE_COLORS } from './canvas'
 
-export async function performCanvasSync(settings: CanvasSettings): Promise<Reminder[]> {
+function nextColor(alreadyUsed: CanvasCourseSettings[]): string {
+  const used = new Set(alreadyUsed.map((s) => s.color))
+  return COURSE_COLORS.find((c) => !used.has(c)) ?? COURSE_COLORS[alreadyUsed.length % COURSE_COLORS.length]
+}
+
+export async function performCanvasSync(
+  settings: CanvasSettings,
+  existingCourseSettings: CanvasCourseSettings[]
+): Promise<{ reminders: Reminder[]; courseSettings: CanvasCourseSettings[] }> {
   const { url, token } = settings
   const now = new Date().toISOString()
 
+  // Only include assignments due within the last 2 months or in the future
+  const cutoff = new Date()
+  cutoff.setMonth(cutoff.getMonth() - 2)
+  const cutoffStr = cutoff.toISOString()
+
   const courses = await fetchCanvasCourses(url, token)
 
+  // Merge with existing settings: keep user's tracked/color choices, add new courses
+  const existingById = new Map(existingCourseSettings.map((s) => [s.id, s]))
+  const courseSettings: CanvasCourseSettings[] = []
+  for (const course of courses) {
+    const existing = existingById.get(course.id)
+    courseSettings.push(
+      existing
+        ? { ...existing, name: course.name }
+        : { id: course.id, name: course.name, color: nextColor(courseSettings), tracked: true }
+    )
+  }
+
+  // Fetch assignments only for tracked courses
+  const trackedSettings = courseSettings.filter((s) => s.tracked)
   const courseAssignments = await Promise.all(
-    courses.map(async (course) => {
+    trackedSettings.map(async (cs) => {
       try {
-        const assignments = await fetchCourseAssignments(url, token, course.id)
-        return { course, assignments }
+        const assignments = await fetchCourseAssignments(url, token, cs.id)
+        return { cs, assignments }
       } catch {
-        return { course, assignments: [] }
+        return { cs, assignments: [] }
       }
     })
   )
 
-  const existing = storage.getReminders()
-
-  // Index existing canvas reminders by canvasAssignmentId for fast lookup
+  // Index existing canvas reminders for update vs create
+  const existingReminders = storage.getReminders()
   const byAssignmentId = new Map<string, Reminder>()
-  for (const r of existing) {
+  for (const r of existingReminders) {
     if (r.source === 'canvas' && r.canvasAssignmentId) {
       byAssignmentId.set(r.canvasAssignmentId, r)
     }
@@ -32,20 +58,24 @@ export async function performCanvasSync(settings: CanvasSettings): Promise<Remin
 
   const canvasReminders: Reminder[] = []
 
-  for (const { course, assignments } of courseAssignments) {
+  for (const { cs, assignments } of courseAssignments) {
     for (const a of assignments) {
+      // Skip assignments older than 2 months
+      if (a.due_at && a.due_at < cutoffStr) continue
+
       const aid = a.id.toString()
       const dueDate = a.due_at ?? undefined
       const submitted = ['submitted', 'graded'].includes(a.submission?.workflow_state ?? '')
-
       const found = byAssignmentId.get(aid)
+
       if (found) {
         canvasReminders.push({
           ...found,
           title: a.name,
           dueDate,
-          // Preserve user-edited notes; only auto-set if notes still equals course name or is empty
-          notes: found.notes === undefined || found.notes === course.name ? course.name : found.notes,
+          color: cs.color,
+          canvasCourseId: cs.id,
+          notes: !found.notes || found.notes === cs.name ? cs.name : found.notes,
           completed: submitted || found.completed,
           updatedAt: now,
         })
@@ -53,12 +83,14 @@ export async function performCanvasSync(settings: CanvasSettings): Promise<Remin
         canvasReminders.push({
           id: generateId(),
           title: a.name,
-          notes: course.name,
+          notes: cs.name,
           dueDate,
           completed: submitted,
-          priority: 'medium',
+          priority: 'high',
           source: 'canvas',
+          color: cs.color,
           canvasAssignmentId: aid,
+          canvasCourseId: cs.id,
           createdAt: now,
           updatedAt: now,
         })
@@ -66,9 +98,9 @@ export async function performCanvasSync(settings: CanvasSettings): Promise<Remin
     }
   }
 
-  // Keep personal reminders, replace all canvas ones with fresh sync
-  const personalReminders = existing.filter((r) => r.source !== 'canvas')
+  const personalReminders = existingReminders.filter((r) => r.source !== 'canvas')
   const merged = [...personalReminders, ...canvasReminders]
   storage.setReminders(merged)
-  return merged
+
+  return { reminders: merged, courseSettings }
 }

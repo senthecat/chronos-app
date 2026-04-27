@@ -83,6 +83,19 @@ export function Sidebar() {
               {v.label}
             </button>
           ))}
+          <div className="h-px bg-border mx-2 my-1" />
+          <button
+            onClick={() => setView('school')}
+            className={cn(
+              'w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors',
+              view === 'school'
+                ? 'bg-accent text-accent-foreground font-medium'
+                : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
+            )}
+          >
+            <GraduationCap size={14} />
+            School
+          </button>
         </nav>
       </div>
 

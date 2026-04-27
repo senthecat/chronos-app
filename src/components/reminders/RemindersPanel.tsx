@@ -119,7 +119,10 @@ function ReminderItem({ reminder, isEditing, isOverdue, onStartEdit, onSave, onC
       </button>
       <div className="flex-1 min-w-0 cursor-pointer" onClick={onStartEdit}>
         <div className="flex items-center gap-1.5">
-          <span className={cn('text-sm truncate', reminder.completed && 'line-through text-muted-foreground')}>
+          <span
+            className={cn('text-sm truncate', reminder.completed && 'line-through text-muted-foreground')}
+            style={!reminder.completed && reminder.color ? { color: reminder.color } : undefined}
+          >
             {reminder.title}
           </span>
           <span className="shrink-0 w-1.5 h-1.5 rounded-full" style={{ background: PRIORITY[reminder.priority].color }} />
@@ -144,7 +147,7 @@ function ReminderItem({ reminder, isEditing, isOverdue, onStartEdit, onSave, onC
 }
 
 export function RemindersPanel() {
-  const { reminders, toggleReminders, addReminder, updateReminder, deleteReminder, toggleReminderComplete } = useAppStore()
+  const { reminders, canvasCourseSettings, toggleReminders, addReminder, updateReminder, deleteReminder, toggleReminderComplete } = useAppStore()
 
   const [newTitle, setNewTitle] = useState('')
   const [newDue, setNewDue] = useState('')
@@ -154,8 +157,21 @@ export function RemindersPanel() {
 
   const t = todayStr()
 
+  // Only show canvas reminders whose course is currently tracked
+  const trackedCourseIds = useMemo(
+    () => new Set(canvasCourseSettings.filter((c) => c.tracked).map((c) => c.id)),
+    [canvasCourseSettings]
+  )
+
+  const visibleReminders = useMemo(
+    () => reminders.filter((r) =>
+      r.source !== 'canvas' || !r.canvasCourseId || trackedCourseIds.has(r.canvasCourseId)
+    ),
+    [reminders, trackedCourseIds]
+  )
+
   const { overdue, dueToday, upcoming, completed } = useMemo(() => {
-    const incomplete = reminders.filter((r) => !r.completed)
+    const incomplete = visibleReminders.filter((r) => !r.completed)
     return {
       overdue: incomplete
         .filter((r) => r.dueDate && r.dueDate.slice(0, 10) < t)
@@ -168,7 +184,7 @@ export function RemindersPanel() {
           if (!b.dueDate) return -1
           return a.dueDate < b.dueDate ? -1 : 1
         }),
-      completed: reminders
+      completed: visibleReminders
         .filter((r) => r.completed)
         .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
     }
@@ -274,7 +290,7 @@ export function RemindersPanel() {
 
       {/* List */}
       <div className="flex-1 overflow-y-auto px-3 py-3 space-y-4">
-        {reminders.length === 0 && (
+        {visibleReminders.length === 0 && (
           <p className="text-center text-xs text-muted-foreground pt-8">No reminders yet</p>
         )}
 
