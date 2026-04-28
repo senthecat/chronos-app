@@ -30,7 +30,7 @@ export function NotesPanel() {
     <div className="w-80 border-l border-border bg-card flex flex-col h-full shrink-0 animate-slide-in">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3.5 border-b border-border">
-        <span className="font-semibold text-sm">Notes</span>
+        <span className="font-semibold text-sm text-foreground">Notes</span>
         <div className="flex items-center gap-1">
           <button onClick={handleNew} className="p-1.5 rounded-lg hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground">
             <Plus size={15} />
@@ -47,7 +47,7 @@ export function NotesPanel() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search notes..."
-          className="w-full text-sm bg-secondary rounded-lg px-3 py-1.5 outline-none focus:ring-1 ring-primary transition-all placeholder:text-muted-foreground"
+          className="w-full text-sm bg-secondary text-foreground rounded-lg px-3 py-1.5 outline-none focus:ring-1 ring-primary transition-all placeholder:text-muted-foreground"
         />
       </div>
 
@@ -64,7 +64,7 @@ export function NotesPanel() {
               data-note-id={note.id}
               onClick={() => setSelectedId(selectedId === note.id ? null : note.id)}
               className={cn(
-                'w-full text-left px-4 py-3 border-b border-border transition-colors',
+                'w-full text-left px-4 py-3 border-b border-border transition-colors text-foreground',
                 selectedId === note.id ? 'bg-accent' : 'hover:bg-secondary'
               )}
             >
@@ -86,7 +86,7 @@ export function NotesPanel() {
             <input
               value={selected.title}
               onChange={(e) => updateNote(selected.id, { title: e.target.value })}
-              className="font-semibold text-sm bg-transparent outline-none flex-1"
+              className="font-semibold text-sm bg-transparent text-foreground outline-none flex-1"
               placeholder="Title"
             />
             <div className="flex items-center gap-1">
@@ -103,7 +103,7 @@ export function NotesPanel() {
             onChange={(e) => updateNote(selected.id, { content: e.target.value })}
             placeholder="Write your note..."
             rows={5}
-            className="w-full text-sm bg-secondary rounded-lg px-3 py-2 outline-none focus:ring-1 ring-primary transition-all resize-none placeholder:text-muted-foreground"
+            className="w-full text-sm bg-secondary text-foreground rounded-lg px-3 py-2 outline-none focus:ring-1 ring-primary transition-all resize-none placeholder:text-muted-foreground"
           />
         </div>
       )}

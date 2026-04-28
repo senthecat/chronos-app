@@ -36,3 +36,19 @@ export async function fetchCourseAssignments(url: string, token: string, courseI
   )
   return data as CanvasAssignment[]
 }
+
+export interface CanvasAnnouncement {
+  id: number
+  title: string
+  message: string
+  posted_at: string
+  author?: { display_name: string }
+}
+
+export async function fetchCourseAnnouncements(url: string, token: string, courseId: number): Promise<CanvasAnnouncement[]> {
+  const data = await window.electronAPI!.canvasFetchAll(
+    url, token,
+    `courses/${courseId}/discussion_topics?only_announcements=true&per_page=10`
+  )
+  return data as CanvasAnnouncement[]
+}

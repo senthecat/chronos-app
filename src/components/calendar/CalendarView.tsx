@@ -6,6 +6,7 @@ import interactionPlugin from '@fullcalendar/interaction'
 import { EventClickArg, DateSelectArg } from '@fullcalendar/core'
 import { useAppStore } from '@/store/appStore'
 import { EventModal } from './EventModal'
+import { ReminderModal } from '@/components/reminders/ReminderModal'
 import { CalendarEvent, Reminder } from '@/lib/types'
 
 function reminderColor(r: Reminder): string {
@@ -15,13 +16,21 @@ function reminderColor(r: Reminder): string {
   return '#6b7280'
 }
 
+function toLocalDateStr(dateStr: string): string {
+  const d = new Date(dateStr.length <= 10 ? dateStr + 'T12:00:00' : dateStr)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
 export function CalendarView() {
-  const { events, reminders, view: appView, selectedCategories, hiddenGoogleAccounts, addEvent, updateEvent, deleteEvent } = useAppStore()
-  const view = (appView === 'school' ? 'dayGridMonth' : appView) as 'dayGridMonth' | 'timeGridWeek' | 'timeGridDay'
+  const { events, reminders, view: appView, selectedCategories, hiddenGoogleAccounts, addEvent, updateEvent, deleteEvent, updateReminder, deleteReminder, toggleReminderComplete } = useAppStore()
+  const view = (appView === 'classes' ? 'dayGridMonth' : appView) as 'dayGridMonth' | 'timeGridWeek' | 'timeGridDay'
   const calendarRef = useRef<FullCalendar>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null)
   const [selectedRange, setSelectedRange] = useState<{ start: string; end: string } | null>(null)
+  const [selectedReminderId, setSelectedReminderId] = useState<string | null>(null)
+  const selectedReminder = reminders.find((r) => r.id === selectedReminderId) ?? null
 
   // Map store events → FullCalendar format, filtered by selected categories and account visibility
   const fcEvents = events
@@ -47,7 +56,7 @@ export function CalendarView() {
       return {
         id: `reminder::${r.id}`,
         title: `🔔 ${r.title}`,
-        start: r.dueDate!,
+        start: toLocalDateStr(r.dueDate!),
         allDay: true,
         editable: false,
         backgroundColor: `${color}22`,
@@ -65,7 +74,11 @@ export function CalendarView() {
   }
 
   const handleEventClick = (arg: EventClickArg) => {
-    if (arg.event.extendedProps.isReminder) return
+    if (arg.event.extendedProps.isReminder) {
+      const reminderId = arg.event.id.replace('reminder::', '')
+      setSelectedReminderId(reminderId)
+      return
+    }
     const event = events.find((e) => e.id === arg.event.id)
     if (event) {
       setEditingEvent(event)
@@ -137,6 +150,15 @@ export function CalendarView() {
         onDelete={handleDelete}
         event={editingEvent}
         defaultRange={selectedRange}
+      />
+
+      <ReminderModal
+        open={selectedReminderId !== null}
+        reminder={selectedReminder}
+        onClose={() => setSelectedReminderId(null)}
+        onSave={(id, patch) => updateReminder(id, patch)}
+        onDelete={(id) => deleteReminder(id)}
+        onToggle={(id) => toggleReminderComplete(id)}
       />
     </div>
   )

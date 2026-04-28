@@ -65,6 +65,7 @@ export interface Reminder {
   title: string
   notes?: string
   dueDate?: string
+  alertMinutesBefore?: number
   completed: boolean
   priority: ReminderPriority
   source: ReminderSource

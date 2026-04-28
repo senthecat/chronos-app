@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
-import { X, Plus, Trash2, ChevronDown, ChevronRight, Circle, CheckCircle2 } from 'lucide-react'
+import { X, Plus, Trash2, ChevronDown, ChevronRight, Circle, CheckCircle2, Bell } from 'lucide-react'
 import { useAppStore } from '@/store/appStore'
 import { Reminder, ReminderPriority } from '@/lib/types'
 import { cn } from '@/lib/utils'
@@ -10,19 +10,64 @@ const PRIORITY: Record<ReminderPriority, { label: string; color: string }> = {
   high: { label: 'High', color: '#ef4444' },
 }
 
+const ALERT_OPTIONS = [
+  { value: 5, label: '5 min' },
+  { value: 10, label: '10 min' },
+  { value: 15, label: '15 min' },
+  { value: 20, label: '20 min' },
+  { value: 30, label: '30 min' },
+  { value: 60, label: '1 hr' },
+  { value: 120, label: '2 hr' },
+  { value: 1440, label: '1 day' },
+]
+
 function todayStr() {
-  return new Date().toISOString().slice(0, 10)
+  const d = new Date()
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 }
 
-function formatDueDate(d: string): string {
-  const day = d.slice(0, 10)
+function toLocalDateStr(dateStr: string): string {
+  const d = new Date(dateStr.length <= 10 ? dateStr + 'T12:00:00' : dateStr)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
+function toDatetimeLocal(dateStr: string): string {
+  if (!dateStr) return ''
+  const d = new Date(dateStr.length <= 10 ? dateStr + 'T12:00:00' : dateStr)
+  if (isNaN(d.getTime())) return ''
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+function defaultDueDateTime(): string {
+  const d = new Date(Date.now() + 30 * 60 * 1000)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+function formatDueDate(dateStr: string): string {
+  const localDate = toLocalDateStr(dateStr)
   const t = todayStr()
-  if (day === t) return 'Today'
-  const date = new Date(day + 'T12:00:00')
-  const diff = Math.round((date.getTime() - new Date(t + 'T12:00:00').getTime()) / 86400000)
-  if (diff === 1) return 'Tomorrow'
-  if (diff === -1) return 'Yesterday'
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  const d = new Date(dateStr.length <= 10 ? dateStr + 'T12:00:00' : dateStr)
+  const hasTime = dateStr.length > 10
+  const timeStr = hasTime
+    ? d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+    : ''
+
+  let dayLabel: string
+  if (localDate === t) dayLabel = 'Today'
+  else {
+    const diff = Math.round(
+      (new Date(localDate + 'T12:00:00').getTime() - new Date(t + 'T12:00:00').getTime()) / 86400000
+    )
+    if (diff === 1) dayLabel = 'Tomorrow'
+    else if (diff === -1) dayLabel = 'Yesterday'
+    else dayLabel = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  }
+
+  return timeStr ? `${dayLabel} at ${timeStr}` : dayLabel
 }
 
 interface ItemProps {
@@ -38,22 +83,30 @@ interface ItemProps {
 
 function ReminderItem({ reminder, isEditing, isOverdue, onStartEdit, onSave, onCancel, onToggle, onDelete }: ItemProps) {
   const [editTitle, setEditTitle] = useState(reminder.title)
-  const [editDue, setEditDue] = useState(reminder.dueDate ?? '')
+  const [editDue, setEditDue] = useState(toDatetimeLocal(reminder.dueDate ?? ''))
   const [editPriority, setEditPriority] = useState<ReminderPriority>(reminder.priority)
   const [editNotes, setEditNotes] = useState(reminder.notes ?? '')
+  const [editAlert, setEditAlert] = useState(reminder.alertMinutesBefore ?? 20)
 
   useEffect(() => {
     if (isEditing) {
       setEditTitle(reminder.title)
-      setEditDue(reminder.dueDate ?? '')
+      setEditDue(toDatetimeLocal(reminder.dueDate ?? ''))
       setEditPriority(reminder.priority)
       setEditNotes(reminder.notes ?? '')
+      setEditAlert(reminder.alertMinutesBefore ?? 20)
     }
   }, [isEditing]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const commitSave = () => {
     if (!editTitle.trim()) return
-    onSave({ title: editTitle.trim(), dueDate: editDue || undefined, priority: editPriority, notes: editNotes || undefined })
+    onSave({
+      title: editTitle.trim(),
+      dueDate: editDue || undefined,
+      priority: editPriority,
+      notes: editNotes || undefined,
+      alertMinutesBefore: editAlert,
+    })
   }
 
   if (isEditing) {
@@ -66,13 +119,13 @@ function ReminderItem({ reminder, isEditing, isOverdue, onStartEdit, onSave, onC
           onKeyDown={(e) => { if (e.key === 'Enter') commitSave(); if (e.key === 'Escape') onCancel() }}
           className="w-full text-sm text-foreground bg-transparent outline-none border-b border-border pb-1.5 focus:border-primary transition-colors placeholder:text-muted-foreground"
         />
+        <input
+          type="datetime-local"
+          value={editDue}
+          onChange={(e) => setEditDue(e.target.value)}
+          className="w-full text-xs text-foreground bg-background rounded-lg px-2 py-1 outline-none focus:ring-1 ring-primary transition-all"
+        />
         <div className="flex gap-1.5 items-center">
-          <input
-            type="date"
-            value={editDue}
-            onChange={(e) => setEditDue(e.target.value)}
-            className="flex-1 text-xs text-foreground bg-background rounded-lg px-2 py-1 outline-none focus:ring-1 ring-primary transition-all"
-          />
           {(['low', 'medium', 'high'] as ReminderPriority[]).map((p) => (
             <button
               key={p}
@@ -85,6 +138,17 @@ function ReminderItem({ reminder, isEditing, isOverdue, onStartEdit, onSave, onC
               {PRIORITY[p].label}
             </button>
           ))}
+          <div className="flex-1" />
+          <Bell size={10} className="text-muted-foreground" />
+          <select
+            value={editAlert}
+            onChange={(e) => setEditAlert(Number(e.target.value))}
+            className="text-[10px] text-foreground bg-background rounded px-1 py-0.5 outline-none focus:ring-1 ring-primary"
+          >
+            {ALERT_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
         </div>
         <textarea
           value={editNotes}
@@ -150,14 +214,14 @@ export function RemindersPanel() {
   const { reminders, canvasCourseSettings, toggleReminders, addReminder, updateReminder, deleteReminder, toggleReminderComplete } = useAppStore()
 
   const [newTitle, setNewTitle] = useState('')
-  const [newDue, setNewDue] = useState('')
+  const [newDue, setNewDue] = useState(defaultDueDateTime)
   const [newPriority, setNewPriority] = useState<ReminderPriority>('medium')
+  const [newAlert, setNewAlert] = useState(20)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [completedOpen, setCompletedOpen] = useState(false)
 
   const t = todayStr()
 
-  // Only show canvas reminders whose course is currently tracked
   const trackedCourseIds = useMemo(
     () => new Set(canvasCourseSettings.filter((c) => c.tracked).map((c) => c.id)),
     [canvasCourseSettings]
@@ -174,11 +238,11 @@ export function RemindersPanel() {
     const incomplete = visibleReminders.filter((r) => !r.completed)
     return {
       overdue: incomplete
-        .filter((r) => r.dueDate && r.dueDate.slice(0, 10) < t)
+        .filter((r) => r.dueDate && toLocalDateStr(r.dueDate) < t)
         .sort((a, b) => (a.dueDate! < b.dueDate! ? -1 : 1)),
-      dueToday: incomplete.filter((r) => r.dueDate && r.dueDate.slice(0, 10) === t),
+      dueToday: incomplete.filter((r) => r.dueDate && toLocalDateStr(r.dueDate) === t),
       upcoming: incomplete
-        .filter((r) => !r.dueDate || r.dueDate.slice(0, 10) > t)
+        .filter((r) => !r.dueDate || toLocalDateStr(r.dueDate) > t)
         .sort((a, b) => {
           if (!a.dueDate) return 1
           if (!b.dueDate) return -1
@@ -188,14 +252,22 @@ export function RemindersPanel() {
         .filter((r) => r.completed)
         .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
     }
-  }, [reminders, t])
+  }, [visibleReminders, t])
 
   const handleAdd = () => {
     if (!newTitle.trim()) return
-    addReminder({ title: newTitle.trim(), dueDate: newDue || undefined, priority: newPriority, completed: false, source: 'personal' })
+    addReminder({
+      title: newTitle.trim(),
+      dueDate: newDue || undefined,
+      priority: newPriority,
+      alertMinutesBefore: newAlert,
+      completed: false,
+      source: 'personal',
+    })
     setNewTitle('')
-    setNewDue('')
+    setNewDue(defaultDueDateTime())
     setNewPriority('medium')
+    setNewAlert(20)
   }
 
   const handleSave = (id: string, patch: Partial<Reminder>) => {
@@ -219,7 +291,7 @@ export function RemindersPanel() {
               key={r.id}
               reminder={r}
               isEditing={editingId === r.id}
-              isOverdue={!!r.dueDate && r.dueDate.slice(0, 10) < t}
+              isOverdue={!!r.dueDate && toLocalDateStr(r.dueDate) < t}
               onStartEdit={() => setEditingId(r.id)}
               onSave={(patch) => handleSave(r.id, patch)}
               onCancel={() => setEditingId(null)}
@@ -266,13 +338,13 @@ export function RemindersPanel() {
             <Plus size={14} />
           </button>
         </div>
-        <div className="flex gap-1.5 items-center">
-          <input
-            type="date"
-            value={newDue}
-            onChange={(e) => setNewDue(e.target.value)}
-            className="flex-1 text-xs text-foreground bg-secondary rounded-lg px-2 py-1 outline-none focus:ring-1 ring-primary transition-all"
-          />
+        <input
+          type="datetime-local"
+          value={newDue}
+          onChange={(e) => setNewDue(e.target.value)}
+          className="w-full text-xs text-foreground bg-secondary rounded-lg px-2 py-1 outline-none focus:ring-1 ring-primary transition-all"
+        />
+        <div className="flex items-center gap-1.5">
           {(['low', 'medium', 'high'] as ReminderPriority[]).map((p) => (
             <button
               key={p}
@@ -285,6 +357,17 @@ export function RemindersPanel() {
               {PRIORITY[p].label}
             </button>
           ))}
+          <div className="flex-1" />
+          <Bell size={10} className="text-muted-foreground" />
+          <select
+            value={newAlert}
+            onChange={(e) => setNewAlert(Number(e.target.value))}
+            className="text-[10px] text-foreground bg-secondary rounded px-1 py-0.5 outline-none focus:ring-1 ring-primary"
+          >
+            {ALERT_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
         </div>
       </div>
 

@@ -28,9 +28,10 @@ interface AppStore {
   darkMode: boolean
   notesOpen: boolean
   remindersOpen: boolean
+  settingsOpen: boolean
   selectedDate: Date | null
   selectedEventId: string | null
-  view: 'dayGridMonth' | 'timeGridWeek' | 'timeGridDay' | 'school'
+  view: 'dayGridMonth' | 'timeGridWeek' | 'timeGridDay' | 'classes'
   selectedCategories: Set<EventCategory>
 
   // Canvas state
@@ -54,6 +55,7 @@ interface AppStore {
   toggleDark: () => void
   toggleNotes: () => void
   toggleReminders: () => void
+  toggleSettings: () => void
   setSelectedDate: (date: Date | null) => void
   setSelectedEvent: (id: string | null) => void
   setView: (view: AppStore['view']) => void
@@ -97,6 +99,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   darkMode: false,
   notesOpen: false,
   remindersOpen: false,
+  settingsOpen: false,
   selectedDate: null,
   selectedEventId: null,
   view: 'dayGridMonth',
@@ -116,6 +119,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   toggleDark: () => set((s) => ({ darkMode: !s.darkMode })),
   toggleNotes: () => set((s) => ({ notesOpen: !s.notesOpen })),
   toggleReminders: () => set((s) => ({ remindersOpen: !s.remindersOpen })),
+  toggleSettings: () => set((s) => ({ settingsOpen: !s.settingsOpen })),
   setSelectedDate: (date) => set({ selectedDate: date }),
   setSelectedEvent: (id) => set({ selectedEventId: id }),
   setView: (view) => set({ view }),

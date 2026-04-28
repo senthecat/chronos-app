@@ -26,7 +26,7 @@ export function Sidebar() {
     selectedCategories,
     canvasSettings, canvasSyncing, canvasSyncError,
     googleAccounts, hiddenGoogleAccounts, googleSyncing, googleSyncError,
-    toggleDark, toggleNotes, toggleReminders, setView,
+    toggleDark, toggleNotes, toggleReminders, toggleSettings, setView,
     toggleCategory, selectAllCategories, deselectAllCategories,
     connectCanvas, disconnectCanvas, syncCanvas,
     connectGoogleAccount, disconnectGoogleAccount, syncGoogleAccount,
@@ -85,16 +85,16 @@ export function Sidebar() {
           ))}
           <div className="h-px bg-border mx-2 my-1" />
           <button
-            onClick={() => setView('school')}
+            onClick={() => setView('classes')}
             className={cn(
               'w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors',
-              view === 'school'
+              view === 'classes'
                 ? 'bg-accent text-accent-foreground font-medium'
                 : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
             )}
           >
             <GraduationCap size={14} />
-            School
+            Classes
           </button>
         </nav>
       </div>
@@ -333,7 +333,10 @@ export function Sidebar() {
           {darkMode ? <Sun size={14} /> : <Moon size={14} />}
           {darkMode ? 'Light mode' : 'Dark mode'}
         </button>
-        <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
+        <button
+          onClick={toggleSettings}
+          className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+        >
           <Settings size={14} />
           Settings
         </button>
