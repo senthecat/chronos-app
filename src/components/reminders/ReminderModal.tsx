@@ -106,7 +106,7 @@ export function ReminderModal({ reminder, open, onClose, onSave, onDelete, onTog
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative z-10 w-80 bg-card border border-border rounded-2xl shadow-2xl p-4 space-y-3">
+      <div className="relative z-10 w-80 bg-card text-card-foreground border border-border rounded-2xl shadow-2xl p-4 space-y-3">
 
         {/* Header */}
         <div className="flex items-center justify-between">

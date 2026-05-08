@@ -9,7 +9,12 @@
       "Bash(where npm *)",
       "Bash(where node *)",
       "Bash(npm --version)",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(node -e \"const v = require\\('./node_modules/vite/package.json'\\); console.log\\(v.version\\)\")",
+      "Bash(npm ls *)",
+      "Bash(node -e \"const c = require\\('./forge.config.cjs'\\); console.log\\('publishers:', JSON.stringify\\(c.publishers, null, 2\\)\\)\")",
+      "Bash(Get-ChildItem -Path \"c:\\\\MichsPlans\\\\chronos-app\\\\chronos-app\" -Force)",
+      "Bash(Select-Object Name, FullName)"
     ]
   }
 }

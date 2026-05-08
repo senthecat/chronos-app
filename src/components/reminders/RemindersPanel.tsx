@@ -305,7 +305,7 @@ export function RemindersPanel() {
   }
 
   return (
-    <aside className="w-72 flex flex-col border-l border-border bg-card h-full shrink-0">
+    <aside className="w-72 flex flex-col border-l border-border bg-card text-card-foreground h-full shrink-0">
       <div className="flex items-center justify-between px-4 py-3.5 border-b border-border">
         <div className="flex items-center gap-2">
           <h2 className="font-semibold text-sm text-foreground">Reminders</h2>

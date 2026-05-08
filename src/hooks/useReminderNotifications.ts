@@ -53,6 +53,7 @@ export function useReminderNotifications(reminders: Reminder[]) {
             : 'Due now!'
           try {
             new Notification(`🔔 ${r.title}`, { body })
+            window.electronAPI?.flashFrame()
           } catch {
             // Notification may be blocked; fail silently
           }

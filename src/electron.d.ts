@@ -15,6 +15,7 @@ interface ElectronAPI {
     token: string,
     path: string
   ) => Promise<unknown[]>
+  flashFrame: () => Promise<void>
 }
 
 declare global {

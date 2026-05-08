@@ -1,6 +1,8 @@
 const { app, BrowserWindow, ipcMain } = require('electron')
 const path = require('path')
 
+let mainWin = null
+
 const REDIRECT_URI = 'http://localhost'
 
 async function exchangeWithGoogle(params) {
@@ -110,6 +112,12 @@ ipcMain.handle('canvas:fetch-all', async (_, rawUrl, token, path) => {
   return results
 })
 
+ipcMain.handle('notification:flash', () => {
+  if (mainWin && !mainWin.isFocused()) {
+    mainWin.flashFrame(true)
+  }
+})
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1280,
@@ -124,6 +132,9 @@ function createWindow() {
     autoHideMenuBar: true,
     title: 'Chronos',
   })
+
+  mainWin = win
+  win.on('focus', () => win.flashFrame(false))
 
   if (app.isPackaged) {
     win.loadFile(path.join(__dirname, '../dist/index.html'))
